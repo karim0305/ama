@@ -13,28 +13,22 @@ export function openApp(rawCommandText: string): ActionResult {
   if (!resolved) {
     return {
       success: false,
-      message: `I don't know an app matching "${rawCommandText}" yet.`,
+      message: `"${rawCommandText}" is not installed. Say "install ${rawCommandText}" to search it on the Play Store.`,
     };
   }
 
-  const { entry } = resolved;
-
-  // Try each known package name for this app, use the first one installed
-  const availablePackage = entry.packageNames.find((pkg) =>
-    AndroidLauncher.isAppInstalled(pkg),
-  );
-
-  if (!availablePackage) {
-    return {
-      success: false,
-      message: `${entry.displayName} is not installed on this device.`,
-    };
-  }
-
-  const launched = AndroidLauncher.openApp(availablePackage);
+  const launched = AndroidLauncher.openApp(resolved.packageName);
   return launched
-    ? { success: true, message: `Opening ${entry.displayName}.` }
-    : { success: false, message: `Could not open ${entry.displayName}.` };
+    ? { success: true, message: `Opening ${resolved.displayName}.` }
+    : { success: false, message: `Could not open ${resolved.displayName}.` };
+}
+
+export function searchOnPlayStore(query: string): ActionResult {
+  AndroidLauncher.openPlayStoreSearch(query);
+  return {
+    success: true,
+    message: `Opening Play Store to search for "${query}". Please tap Install to add it.`,
+  };
 }
 
 export function goHome(): ActionResult {

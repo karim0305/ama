@@ -21,11 +21,14 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "RECORD_AUDIO",
         "android.permission.RECORD_AUDIO",
-        "READ_CONTACTS"
+        "READ_CONTACTS",
+        "RECORD_AUDIO",
+        "QUERY_ALL_PACKAGES"
       ],
       "package": "com.mominkarim.ama"
     },
@@ -50,8 +53,9 @@
           "speechRecognitionPermission": "Allow $(PRODUCT_NAME) to securely recognize your speech."
         }
       ],
-      "./plugins/withAccessibilityService.js",
       "./plugins/withAppQueries.js",
+      "./plugins/withAccessibilityService.js",
+      "./plugins/withVoiceOverlay.js",
       "expo-secure-store",
       "expo-sqlite"
     ],

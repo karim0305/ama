@@ -1,12 +1,13 @@
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { StyleSheet, Text, useColorScheme, View } from "react-native";
 import ConfirmationModal from "../components/FloatingAssistant/ConfirmationModal";
 import DisambiguationModal from "../components/FloatingAssistant/DisambiguationModal";
 import FloatingButton from "../components/FloatingAssistant/FloatingButton";
 import TextCommandModal from "../components/FloatingAssistant/TextCommandModal";
 import { useAppSettings } from "../hooks/useAppSettings";
 import { useAssistantState } from "../hooks/useAssistantState";
+import { useContinuousVoiceMode } from "../hooks/useContinuousVoiceMode";
 import { initiateCall } from "../services/Android/CallService";
 import {
   findContactsByName,
@@ -15,12 +16,7 @@ import {
 } from "../services/Android/ContactResolver";
 import { parseCommand } from "../services/AssistantEngine/AssistantEngine";
 import { executeCommand } from "../services/Commands/CommandExecutor";
-import {
-  localeForLanguage,
-  requestMicPermission,
-  startListening,
-  useSpeechRecognitionEvent,
-} from "../services/Speech/SpeechService";
+import { useSpeechRecognitionEvent } from "../services/Speech/SpeechService";
 import { addHistoryEntry } from "../services/Storage/LocalStorage";
 import { syncHistoryEntry } from "../services/Supabase/SyncService";
 import { speak } from "../services/TTS/TTSService";
@@ -36,22 +32,6 @@ export default function HomeScreen() {
   const [disambiguationList, setDisambiguationList] = useState<
     MatchedContact[] | null
   >(null);
-
-  const handleMic = useCallback(async () => {
-    const granted = await requestMicPermission();
-    if (!granted) {
-      Alert.alert(
-        "Microphone permission required",
-        "Please enable microphone access.",
-      );
-      return;
-    }
-    setState("LISTENING");
-    setStatusText("Listening...");
-    startListening(localeForLanguage("auto"));
-  }, []);
-
-  const handleText = () => setTextModalVisible(true);
 
   /**
    * Actually places the call — used both when the user taps "Call" on
@@ -114,6 +94,9 @@ export default function HomeScreen() {
    * Everything funnels through AssistantEngine.parseCommand →
    * CommandExecutor, and every result is logged locally and
    * synced to Supabase (if configured).
+   *
+   * Defined BEFORE useContinuousVoiceMode() below, since that hook
+   * needs a reference to this function.
    */
   const handleCommand = async (rawText: string) => {
     setState("PROCESSING");
@@ -148,9 +131,24 @@ export default function HomeScreen() {
     setTimeout(() => setState("IDLE"), 1200);
   };
 
-  // Speech recognition event listeners — placed after handleCommand
-  // is defined, since the result handler calls it directly once a
-  // final transcript arrives.
+  // Continuous voice mode hook — must come after handleCommand is defined
+  const voiceMode = useContinuousVoiceMode(handleCommand);
+
+  const handleMic = useCallback(async () => {
+    if (voiceMode.active) {
+      voiceMode.stop();
+      return;
+    }
+    const started = await voiceMode.start();
+    if (started) {
+      setState("LISTENING");
+      setStatusText("Listening... (tap the floating stop button to end)");
+    }
+  }, [voiceMode]);
+
+  const handleText = () => setTextModalVisible(true);
+
+  // Speech recognition event listeners — single set, no duplicates.
   useSpeechRecognitionEvent("result", (event) => {
     const transcript = event.results[0]?.transcript ?? "";
     setStatusText(transcript);
@@ -161,7 +159,7 @@ export default function HomeScreen() {
   });
 
   useSpeechRecognitionEvent("end", () => {
-    setState((prev) => (prev === "LISTENING" ? "IDLE" : prev));
+    voiceMode.handleRecognitionEnd(); // auto-restart if still in continuous mode
   });
 
   useSpeechRecognitionEvent("error", () => {

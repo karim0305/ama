@@ -19,6 +19,7 @@ export type IntentType =
   | "OPEN_BLUETOOTH_SETTINGS"
   | "CHECK_BATTERY"
   | "ENABLE_ACCESSIBILITY"
+  | "INSTALL_APP"
   | "UNKNOWN";
 
 export interface StructuredCommand {

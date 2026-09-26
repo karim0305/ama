@@ -24,5 +24,11 @@ export function extractEntities(
 
     default:
       return {};
+
+    case "INSTALL_APP": {
+      const match = lower.match(/^install\s+(.+)$/);
+      if (match) return { app: match[1].trim() };
+      return {};
+    }
   }
 }

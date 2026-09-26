@@ -56,6 +56,11 @@ export const INTENT_PATTERNS: IntentPattern[] = [
     test: (t) => /^call\s+/.test(t) || /\sko\s+call\b/.test(t),
     requiresConfirmation: true, // sensitive action — Phase 9 security requirement
   },
+  {
+    intent: "INSTALL_APP",
+    test: (t) => /^install\s+/.test(t) || /\binstall\s+karo\b/.test(t),
+    requiresConfirmation: false,
+  },
   // OPEN_APP is the fallback — anything that isn't the above and
   // isn't total gibberish gets tried against the AppResolver.
 ];

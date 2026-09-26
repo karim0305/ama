@@ -1,16 +1,17 @@
 import * as Battery from "expo-battery";
 import { StructuredCommand } from "../../types/commands";
 import {
-    goBack,
-    openAccessibilitySettings,
-    openRecents,
+  goBack,
+  openAccessibilitySettings,
+  openRecents,
 } from "../Android/AccessibilityActions";
 import {
-    goHome,
-    openApp,
-    openBluetoothSettings,
-    openSettings,
-    openWifiSettings,
+  goHome,
+  openApp,
+  openBluetoothSettings,
+  openSettings,
+  openWifiSettings,
+  searchOnPlayStore,
 } from "../Android/AndroidActions";
 
 export interface ExecutionResult {
@@ -27,6 +28,8 @@ export async function executeCommand(
   switch (command.intent) {
     case "OPEN_APP":
       return openApp(command.entities.app ?? command.raw);
+    case "INSTALL_APP":
+      return searchOnPlayStore(command.entities.app ?? command.raw);
 
     case "GO_HOME":
       return goHome();
